@@ -3399,7 +3399,7 @@ BEGIN
                    EXISTS (
                        SELECT
                        FROM pg_class AS _c
-                       CROSS JOIN LATERAL aclexplode(COALESCE(_c.relacl, acldefault('r', _c.relowner))) AS _acl
+                       CROSS JOIN LATERAL aclexplode(COALESCE(_c.relacl, ARRAY[makeaclitem(_c.relowner, _c.relowner, 'SELECT', false)])) AS _acl
                        WHERE _c.oid = objects.table_name
                          AND _acl.grantee = objects.grantee
                          AND _acl.privilege_type = 'SELECT'
@@ -3414,7 +3414,7 @@ BEGIN
                        'h' AS history_or_portion
                 FROM periods.system_versioning AS sv
                 JOIN pg_class AS c ON c.oid IN (sv.history_table_name, sv.view_name)
-                CROSS JOIN LATERAL aclexplode(COALESCE(c.relacl, acldefault('r', c.relowner))) AS acl
+                CROSS JOIN LATERAL aclexplode(COALESCE(c.relacl, ARRAY[makeaclitem(c.relowner, c.relowner, 'SELECT', false)])) AS acl
 
                 UNION ALL
 
@@ -3427,7 +3427,7 @@ BEGIN
                        'p' AS history_or_portion
                 FROM periods.for_portion_views AS fpv
                 JOIN pg_class AS c ON c.oid = fpv.view_name
-                CROSS JOIN LATERAL aclexplode(COALESCE(c.relacl, acldefault('r', c.relowner))) AS acl
+                CROSS JOIN LATERAL aclexplode(COALESCE(c.relacl, ARRAY[makeaclitem(c.relowner, c.relowner, 'SELECT', false)])) AS acl
 
                 UNION ALL
 
@@ -3440,7 +3440,7 @@ BEGIN
                        'h'
                 FROM periods.system_versioning AS sv
                 JOIN pg_proc AS p ON p.oid = ANY (ARRAY[sv.func_as_of, sv.func_between, sv.func_between_symmetric, sv.func_from_to]::regprocedure[])
-                CROSS JOIN LATERAL aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) AS acl
+                CROSS JOIN LATERAL aclexplode(COALESCE(p.proacl, ARRAY[makeaclitem(p.proowner, p.proowner, 'EXECUTE', false)])) AS acl
             ) AS objects
             ORDER BY object_name, object_type, privilege_type
         LOOP
